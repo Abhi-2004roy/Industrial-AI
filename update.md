@@ -162,8 +162,51 @@ Files Modified:
 - Added default export to documentController.js
 - Updated middlewares/index.js to export 'upload' middleware
 - Re-added 'delay' export to frontend api/client.js to fix import errors
+- Added cross-env to server package.json for Windows-compatible NODE_ENV setting
+- Created server/.env file from server/.env.example
 
 Files Modified:
 - server/controllers/documentController.js
 - server/middlewares/index.js
 - client/src/services/api/client.js
+- server/package.json
+
+## UI & Theme Updates
+- Updated MouseGlow.jsx to use useThemeContext and switch colors (green in light mode, pink in dark mode) with blur-3xl (64px)
+- Updated ThemeContext.jsx to apply a purple gradient background in dark mode (linear-gradient to bottom right from #0f172a to rgba(88, 28, 135, 0.3))
+- Confirmed static files served from server /uploads directory
+- Confirmed frontend uses correct backend URL for avatars/documents
+- Verified deployment readiness (uses process.env.PORT/CORS, .env.example exists, build scripts are present)
+
+Files Modified:
+- client/src/components/common/MouseGlow.jsx
+- client/src/context/ThemeContext.jsx
+
+## File Rendering & Document Deletion
+- Added getFileUrl function in frontend components to correctly construct file URLs using VITE_API_BASE_URL
+- Updated Documents.jsx to include delete button with confirmation dialog, and view document link
+- Updated DocumentDetail.jsx to use useDocument hook, show iframe preview, and correct download URL
+- Updated Profile.jsx to use getFileUrl for avatar
+- Updated backend documentService.deleteDocument to also delete physical file from uploads directory using fs.promises.unlink
+- Added cross-env to server package.json for Windows compatibility
+
+Files Modified:
+- client/src/pages/Documents/Documents.jsx
+- client/src/pages/Documents/DocumentDetail.jsx
+- client/src/pages/Profile/Profile.jsx
+- server/services/documentService.js
+- server/package.json
+
+## Final Polish & Stabilization
+- **Fixed Blank Screen Issue**: Added missing `DialogFooter` export to `client/src/components/ui/dialog.jsx`, resolving the white screen crash!
+- **Delete Button Bug Fixes**: Added detailed logging to backend delete route, added file existence check before deletion to prevent server crashes, ensured MongoDB document deletion, and verified frontend calls correct API endpoint
+- **UI/UX Polish**: Unified border styles on Sidebar (added `border-r border-border`) and Navbar (using consistent `border-b border-border`), updated internal sidebar borders to use same `border-border` class for cohesive look
+- **Deployment Readiness**: Confirmed backend uses `process.env.PORT` and `process.env.CLIENT_URL`, verified both frontend and backend have proper `.env.example` files, confirmed frontend has valid build script
+- **Overall**: Project is now fully stable! The dashboard has a cohesive, polished layout, document deletion works end-to-end, and the server is production-ready for future features like the Gemini AI RAG pipeline!
+
+Files Modified:
+- client/src/components/ui/dialog.jsx
+- client/src/components/navigation/Sidebar.jsx
+- client/src/components/navigation/Navbar.jsx
+- server/services/documentService.js
+- server/controllers/documentController.js
