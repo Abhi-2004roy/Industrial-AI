@@ -22,6 +22,7 @@ export default function Login() {
       await login(data)
       navigate('/dashboard')
     } catch (err) {
+      console.error('Login error:', err)
       setError(err.message || 'Login failed')
     } finally {
       setLoading(false)
@@ -109,4 +110,3 @@ export default function Login() {
     </div>
   )
 }
-

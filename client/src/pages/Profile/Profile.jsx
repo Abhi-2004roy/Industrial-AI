@@ -1,31 +1,31 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useAuthContext } from '@/context/AuthContext'
 import { useThemeContext } from '@/context/ThemeContext'
 import { uploadProfileImage } from '@/services/api/documents'
+import { getFileUrl } from '@/utils/fileUrl'
 
 export default function Profile() {
   const { user, updateUser } = useAuthContext()
   const { isDark } = useThemeContext()
-  const { register, handleSubmit, setValue } = useForm()
+  const { register, handleSubmit } = useForm()
   const [loadingImage, setLoadingImage] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
-  const getFileUrl = (filePath) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000'
-    return `${baseUrl}${filePath}`
-  }
+  const avatarPath = user?.avatar || user?.profileImage
+  const avatarUrl = avatarPath && !imageError ? getFileUrl(avatarPath) : ''
 
   const handleImageChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     setLoadingImage(true)
+    setImageError(false)
     try {
       const formData = new FormData()
       formData.append('image', file)
@@ -57,11 +57,12 @@ export default function Profile() {
       <Card className={`${isDark ? 'bg-slate-800 border-slate-700' : ''}`}>
         <CardContent className="pt-6">
           <div className="flex flex-col items-center mb-8">
-            {user?.avatar ? (
+            {avatarUrl ? (
               <img
-                src={getFileUrl(user.avatar)}
+                src={avatarUrl}
                 alt="Profile"
                 className="w-24 h-24 rounded-full object-cover mb-4"
+                onError={() => setImageError(true)}
               />
             ) : (
               <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center text-white text-4xl font-bold mb-4">
@@ -127,4 +128,3 @@ export default function Profile() {
     </div>
   )
 }
-

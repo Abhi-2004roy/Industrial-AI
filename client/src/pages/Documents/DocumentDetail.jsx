@@ -5,19 +5,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, ArrowLeft, Download, Brain, MessageSquare } from 'lucide-react'
-import { mockDocuments } from '@/constants/mockData'
 import { useThemeContext } from '@/context/ThemeContext'
 import { useDocument } from '@/hooks/useDocuments'
+import { getFileUrl } from '@/utils/fileUrl'
 
 export default function DocumentDetail() {
   const { id } = useParams()
   const { isDark } = useThemeContext()
   const { data: docFromApi, isLoading } = useDocument(id)
-  const doc = docFromApi || mockDocuments.find(d => d.id === id)
+  const doc = docFromApi
 
-  const getFileUrl = (filePath) => {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000'
-    return `${baseUrl}${filePath}`
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <p className={isDark ? 'text-slate-300' : 'text-muted'}>Loading document...</p>
+      </div>
+    )
   }
 
   if (!doc) {
@@ -151,4 +154,3 @@ export default function DocumentDetail() {
     </div>
   )
 }
-

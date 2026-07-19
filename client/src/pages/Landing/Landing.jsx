@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { FileText, Brain, BarChart3, Users } from 'lucide-react'
 import { ImageSlider } from '@/components/common/ImageSlider'
+import { Testimonials } from '@/components/landing/Testimonials'
+import { Footer } from '@/components/layout/Footer'
 import { useThemeContext } from '@/context/ThemeContext'
 
 const features = [
@@ -109,6 +111,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <Testimonials />
+      <Footer />
     </div>
   )
 }

@@ -33,12 +33,13 @@ export const getDocumentById = async (req, res, next) => {
 
 export const deleteDocument = async (req, res, next) => {
   try {
-    console.log('[deleteDocument Controller] Received request with id:', req.params.id, 'user:', req.user._id)
     const doc = await documentService.deleteDocument(req.user._id, req.params.id)
-    console.log('[deleteDocument Controller] Sending success response')
-    res.status(200).json({ success: true, data: doc })
+    res.status(200).json({
+      success: true,
+      message: 'Document deleted successfully',
+      data: doc,
+    })
   } catch (err) {
-    console.error('[deleteDocument Controller] Error:', err)
     next(err)
   }
 }

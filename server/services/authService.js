@@ -8,6 +8,7 @@ import {
 } from '../utils/index.js';
 import config from '../config/index.js';
 import UserRepository from '../repositories/UserRepository.js';
+import { sanitizeUserForResponse } from '../utils/filePaths.js';
 import { logger } from '../utils/index.js';
 
 export const generateTokens = (userId) => {
@@ -38,26 +39,43 @@ export const register = async (userData) => {
   const { accessToken, refreshToken } = generateTokens(user._id);
   await UserRepository.updateRefreshToken(user._id, refreshToken);
 
-  const userWithoutPassword = user.toObject();
-  delete userWithoutPassword.password;
-
-  return { user: userWithoutPassword, accessToken, refreshToken };
+  return {
+    user: sanitizeUserForResponse(user),
+    accessToken,
+    refreshToken,
+  };
 };
 
 export const login = async (email, password) => {
+  console.log('[authService.login] Attempting login with email:', email);
+  
   const user = await UserRepository.findByEmail(email);
+  console.log('[authService.login] Found user:', user ? { _id: user._id, email: user.email } : null);
 
-  if (!user || !(await user.matchPassword(password))) {
+  if (!user) {
+    console.log('[authService.login] No user found for email:', email);
+    throw new UnauthorizedError('Invalid credentials');
+  }
+
+  const passwordMatch = await user.matchPassword(password);
+  console.log('[authService.login] Password match:', passwordMatch);
+  
+  if (!passwordMatch) {
+    console.log('[authService.login] Password mismatch for email:', email);
     throw new UnauthorizedError('Invalid credentials');
   }
 
   const { accessToken, refreshToken } = generateTokens(user._id);
   await UserRepository.updateRefreshToken(user._id, refreshToken);
 
-  const userWithoutPassword = user.toObject();
-  delete userWithoutPassword.password;
+  const sanitizedUser = sanitizeUserForResponse(user);
+  console.log('[authService.login] Sanitized user:', sanitizedUser);
 
-  return { user: userWithoutPassword, accessToken, refreshToken };
+  return {
+    user: sanitizedUser,
+    accessToken,
+    refreshToken,
+  };
 };
 
 export const logout = async (userId) => {
@@ -87,7 +105,7 @@ export const getCurrentUser = async (userId) => {
   if (!user) {
     throw new NotFoundError('User not found');
   }
-  return user;
+  return sanitizeUserForResponse(user);
 };
 
 export const updateProfile = async (userId, updateData) => {
@@ -99,7 +117,8 @@ export const updateProfile = async (userId, updateData) => {
     }
   }
 
-  return await UserRepository.updateById(userId, updateData);
+  const user = await UserRepository.updateById(userId, updateData);
+  return sanitizeUserForResponse(user);
 };
 
 export const generateVerificationToken = async (userId) => {

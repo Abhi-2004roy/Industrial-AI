@@ -21,7 +21,7 @@ export async function uploadDocument(formData) {
 
 export async function deleteDocument(id) {
   const response = await apiClient.delete(`/documents/${id}`)
-  return response.data
+  return response.data.data
 }
 
 export async function uploadProfileImage(formData) {

@@ -3,10 +3,17 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import DocumentRepository from '../repositories/DocumentRepository.js'
 import UserRepository from '../repositories/UserRepository.js'
+import config from '../config/index.js'
+import {
+  normalizeStoredUploadPath,
+  resolveUploadAbsolutePath,
+  sanitizeUserForResponse,
+} from '../utils/filePaths.js'
 import { NotFoundError, BadRequestError } from '../utils/errors.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const uploadsDir = path.resolve(__dirname, '..', config.uploadPath)
 
 export const uploadDocument = async (userId, file, data) => {
   if (!file) {
@@ -38,43 +45,46 @@ export const getDocumentById = async (userId, docId) => {
   if (!doc) {
     throw new NotFoundError('Document not found')
   }
-  if (doc.uploader.toString() !== userId.toString()) {
+
+  const uploaderId = doc.uploader?._id?.toString?.() || doc.uploader?.toString?.()
+  if (uploaderId !== userId.toString()) {
     throw new NotFoundError('Document not found')
   }
+
   return doc
 }
 
 export const deleteDocument = async (userId, docId) => {
-  console.log('[deleteDocument] Starting deletion for user:', userId, 'docId:', docId)
   const doc = await getDocumentById(userId, docId)
-  console.log('[deleteDocument] Found document:', doc._id, doc.fileName)
-  // Delete the physical file from uploads directory
-  const filePath = path.join(__dirname, '../uploads', doc.fileName)
-  console.log('[deleteDocument] File path to delete:', filePath)
-  try {
-    // Check if file exists first
-    await fs.promises.access(filePath)
-    await fs.promises.unlink(filePath)
-    console.log('[deleteDocument] File deleted successfully')
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      console.warn(`[deleteDocument] File not found for deletion: ${filePath}`)
-    } else {
-      console.error('[deleteDocument] Error deleting file:', err)
+  const storedFileName = doc.fileName || path.basename(doc.filePath || '')
+  const filePath = resolveUploadAbsolutePath(storedFileName, uploadsDir)
+
+  if (filePath) {
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath)
+      }
+    } catch (err) {
+      console.error('[deleteDocument] Error deleting file (continuing anyway):', err)
     }
   }
-  console.log('[deleteDocument] Deleting document from DB...')
+
   const deletedDoc = await DocumentRepository.deleteById(docId)
-  console.log('[deleteDocument] Document deleted from DB:', deletedDoc)
-  return doc
+  if (!deletedDoc) {
+    throw new NotFoundError('Document not found')
+  }
+
+  return deletedDoc
 }
 
 export const uploadProfileImage = async (userId, file) => {
   if (!file) {
     throw new BadRequestError('No file uploaded')
   }
+
   const user = await UserRepository.updateById(userId, {
-    avatar: `/uploads/${file.filename}`
+    avatar: file.filename,
   })
-  return user
+
+  return sanitizeUserForResponse(user)
 }

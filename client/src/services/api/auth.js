@@ -1,10 +1,27 @@
 import apiClient from './client'
 
+function getApiErrorMessage(error, fallback) {
+  const message = error.response?.data?.message
+  if (typeof message === 'string') return message
+  if (Array.isArray(message)) return message.join(', ')
+  return error.message || fallback
+}
+
 export async function login(credentials) {
-  const response = await apiClient.post('/auth/login', credentials)
-  return {
-    token: response.data.data.accessToken,
-    user: response.data.data.user,
+  try {
+    console.log('[auth.js.login] Sending login request with credentials:', credentials);
+    const response = await apiClient.post('/auth/login', credentials)
+    console.log('[auth.js.login] Login response:', response.data);
+    if (!response.data?.data?.accessToken || !response.data?.data?.user) {
+      throw new Error('Invalid login response from server')
+    }
+    return {
+      token: response.data.data.accessToken,
+      user: response.data.data.user,
+    }
+  } catch (error) {
+    console.error('[auth.js.login] Login error:', error);
+    throw new Error(getApiErrorMessage(error, 'Login failed'))
   }
 }
 

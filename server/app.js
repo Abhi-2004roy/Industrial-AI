@@ -28,6 +28,7 @@ app.set('trust proxy', true);
 
 // Security Headers
 app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -38,10 +39,11 @@ app.use(helmet({
   },
 }));
 
-// CORS
+// CORS — allow local dev and deployed Vercel frontend
+const allowedOrigins = [...new Set([config.clientUrl, 'http://localhost:5173', 'http://localhost:5174'].filter(Boolean))];
 app.use(
   cors({
-    origin: config.clientUrl,
+    origin: allowedOrigins,
     credentials: true,
   })
 );
@@ -67,7 +69,7 @@ app.use(compression());
 app.use('/api/', generalLimiter);
 
 // Static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, config.uploadPath)));
 
 // API Routes
 app.use('/api/v1', apiRouter);

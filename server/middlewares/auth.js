@@ -14,19 +14,19 @@ export const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    throw new UnauthorizedError('Not authorized to access this route');
+    return next(new UnauthorizedError('Not authorized to access this route'));
   }
 
   try {
     const decoded = jwt.verify(token, config.jwt.secret);
     const user = await User.findById(decoded.id);
     if (!user) {
-      throw new NotFoundError('User not found');
+      return next(new NotFoundError('User not found'));
     }
     req.user = user;
     next();
   } catch (err) {
-    throw new UnauthorizedError('Not authorized to access this route');
+    next(new UnauthorizedError('Not authorized to access this route'));
   }
 };
 
