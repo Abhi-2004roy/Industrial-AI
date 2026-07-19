@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'
 
-dotenv.config();
+dotenv.config()
 
 export default {
   env: process.env.NODE_ENV || 'development',
@@ -19,6 +19,11 @@ export default {
     cookieExpire: parseInt(process.env.JWT_COOKIE_EXPIRE) || 30,
     refreshSecret: process.env.REFRESH_TOKEN_SECRET || 'your-super-secret-refresh-token-key',
     refreshExpiresIn: process.env.REFRESH_TOKEN_EXPIRE || '7d',
+  },
+
+  // Google Gemini
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || '',
   },
 
   // Email

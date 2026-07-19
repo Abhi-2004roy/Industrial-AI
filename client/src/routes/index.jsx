@@ -18,6 +18,7 @@ import Settings from '@/pages/Settings/Settings'
 import Profile from '@/pages/Profile/Profile'
 import Notifications from '@/pages/Notifications/Notifications'
 import UserManagement from '@/pages/UserManagement/UserManagement'
+import AIChat from '@/pages/AIChat'
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuthContext()
@@ -111,6 +112,10 @@ export const router = createBrowserRouter([
       {
         path: '/dashboard/upload',
         element: <UploadDocument />
+      },
+      {
+        path: '/dashboard/ai-chat',
+        element: <AIChat />
       },
       {
         path: '/dashboard/document/:id',

@@ -11,7 +11,8 @@ import {
   Settings,
   User,
   Menu,
-  X
+  X,
+  Sparkles
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { useAuthContext } from '@/context/AuthContext'
@@ -22,6 +23,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: FileText, label: 'Documents', path: '/dashboard/documents' },
   { icon: Upload, label: 'Upload', path: '/dashboard/upload' },
+  { icon: Sparkles, label: 'AI Assistant', path: '/dashboard/ai-chat' },
   { icon: BarChart3, label: 'Analytics', path: '/dashboard/analytics' },
   { icon: Bell, label: 'Notifications', path: '/dashboard/notifications' },
   { icon: Users, label: 'Users', path: '/dashboard/users' },

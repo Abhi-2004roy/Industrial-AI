@@ -210,3 +210,80 @@ Files Modified:
 - client/src/components/navigation/Navbar.jsx
 - server/services/documentService.js
 - server/controllers/documentController.js
+
+---
+
+## Today's Final Milestones: AI Assistant & UI Finalization
+
+### Split Deployment Preparation
+- **Backend (Render)**: Confirmed `package.json` has correct `start` script, updated CORS to accept `CLIENT_URL` from environment variables and added `http://localhost:5174` for local development, uses `process.env.PORT`
+- **Frontend (Vercel)**: Confirmed all API calls use `VITE_API_BASE_URL`, added proper `.env.example`
+- **CORS Update**: Backend now allows both `http://localhost:5173` and `http://localhost:5174` for local dev
+
+### Landing Page & UI Updates
+- **Added Scrolling Testimonials**: Created `Testimonials.jsx` with infinite marquee animation using Tailwind CSS keyframes, added 5 dummy reviews, integrated into `Landing.jsx`
+- **Moved Footer to Landing Page**: Removed footer from `AppLayout.jsx` (authenticated dashboard), added `Footer.jsx` to `Landing.jsx` at bottom, fixed lucide-react icon imports (replaced missing `Github`/`Youtube` with available icons)
+- **Footer Content**: Includes "Connect with me" section with Mail link to `codesonlyabhi@gmail.com`, About section with exact text as requested
+
+### AI Assistant Feature (Core)
+- **Frontend**:
+  - Added "AI Assistant" nav item to Sidebar using Sparkles icon
+  - Created `AIChat.jsx` page: two-column layout, document selector sidebar, chat window, message history, loading states
+  - Created `client/src/services/api/ai.js` API service
+  - Added route `/dashboard/ai-chat` to protected routes
+- **Backend**:
+  - Installed `@google/generative-ai` and `pdf-parse` packages
+  - Created `server/controllers/aiController.js`: handles document text extraction (txt/pdf), sends prompt to Gemini 2.0 Flash, truncates long text to avoid token limits
+  - Created `server/routes/ai.js` (protected by auth middleware)
+  - Updated `config/index.js` to expect `GEMINI_API_KEY`
+  - Updated `server/.env.example` to include `GEMINI_API_KEY`
+  - Added ai routes to `server/routes/index.js`
+
+Files Modified/Created:
+- client/src/components/navigation/Sidebar.jsx
+- client/src/pages/AIChat.jsx (new)
+- client/src/services/api/ai.js (new)
+- client/src/routes/index.jsx
+- client/src/components/landing/Testimonials.jsx (new)
+- client/src/components/layout/Footer.jsx
+- client/src/pages/Landing/Landing.jsx
+- client/src/components/layout/AppLayout.jsx
+- server/package.json
+- server/config/index.js
+- server/.env.example
+- server/controllers/aiController.js (new)
+- server/routes/ai.js (new)
+- server/routes/index.js
+
+---
+
+## AI Assistant & Upload Fixes
+
+### Fixes to Resolve Server Crashes
+- **Added InternalServerError**: Added InternalServerError class to `server/utils/errors.js`, exported from `server/utils/index.js`
+- **Fixed pdf-parse Import**: Used `createRequire` to import pdf-parse (CommonJS module) in `server/controllers/aiController.js`
+- **Fixed auth Middleware Import**: Changed import from `{ auth }` to `{ protect }` in `server/routes/ai.js`
+- **Added Try/Catch for PDF Parsing**: Added try/catch around pdf parsing in `extractTextFromFile` function
+- **Truncated Text to 15000 Chars**: Added temporary text truncation (15k chars) with TODO comment about RAG pipeline
+- **Increased Upload Limit**: Updated `server/middlewares/upload.js` to allow files up to 15MB (from 10MB)
+- **Killed Stale Port 5000 Process**: Terminated process 1604 to free up port 5000
+- **Verified Server Startup**: Backend is now running successfully on port 5000
+
+Files Modified:
+- server/utils/errors.js
+- server/utils/index.js
+- server/controllers/aiController.js
+- server/routes/ai.js
+- server/middlewares/upload.js
+
+---
+
+## Gemini Model Switch
+
+### Switched from gemini-2.0-flash to gemini-1.5-flash
+- **Changed model initialization** in `server/controllers/aiController.js` to use `gemini-1.5-flash` instead of `gemini-2.0-flash`
+- **Verified text truncation** is still in place (15,000 characters)
+- **Restarted backend server** to apply changes; server is now running successfully on port 5000
+
+Files Modified:
+- server/controllers/aiController.js

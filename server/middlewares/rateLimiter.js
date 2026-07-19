@@ -7,6 +7,7 @@ const createRateLimiter = (options = {}) => {
     max: options.max || config.rateLimit.max,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { trustProxy: false },
     message: {
       success: false,
       message: 'Too many requests from this IP, please try again later',
