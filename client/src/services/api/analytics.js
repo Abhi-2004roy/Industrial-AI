@@ -1,32 +1,17 @@
-import { delay } from './client'
-import { mockAnalytics } from '@/constants/mockData'
+import apiClient from './client'
 
-export async function getAnalyticsOverview() {
-  await delay(500)
-  return mockAnalytics.overview
+export async function getMetrics() {
+  const response = await apiClient.get('/analytics/metrics')
+  return response.data.data
 }
 
-export async function getDocumentTrend() {
-  await delay(400)
-  return mockAnalytics.documentTrend
-}
+export async function analyzeDocument(file) {
+  const formData = new FormData()
+  formData.append('document', file)
 
-export async function getCategoryDistribution() {
-  await delay(400)
-  return mockAnalytics.categoryDistribution
-}
-
-export async function getAiUsage() {
-  await delay(400)
-  return mockAnalytics.aiUsage
-}
-
-export async function getTopDocuments() {
-  await delay(400)
-  return mockAnalytics.topDocuments
-}
-
-export async function getFullAnalytics() {
-  await delay(600)
-  return mockAnalytics
+  const response = await apiClient.post('/analytics/analyze-document', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000,
+  })
+  return response.data.data
 }

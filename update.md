@@ -287,3 +287,61 @@ Files Modified:
 
 Files Modified:
 - server/controllers/aiController.js
+
+---
+
+## Latest Updates: Analytics & GROQ Integration
+
+### Dynamic Analytics Metrics
+- **Backend**: Created `analyticsService.js` with `getMetrics()` that queries MongoDB for:
+  - Total logins/registers from ActivityLog
+  - Active users (total users in User model)
+  - Total documents
+  - Uploads today
+  - Total views (sum of document.views)
+- **Backend**: Added `analyticsController.js` with `getMetrics` and `analyzeDocument`
+- **Backend**: Added `routes/analytics.js` with protected /metrics and /analyze-document endpoints
+- **Frontend**: Added `useAnalyticsMetrics` hook in `client/src/hooks/useAnalytics.js`
+- **Frontend**: Updated Dashboard.jsx to use dynamic metrics instead of mock data
+
+### GROQ-Powered Document Analysis Pipeline
+- **Backend**: Installed `groq-sdk` and `pdf-parse-new`
+- **Backend analyticsService.js**:
+  - `extractPdfText`: Extracts text from PDF buffers
+  - `analyzeDocument`:
+    - Validates PDF input
+    - Extracts text
+    - Truncates to 12,000 chars
+    - Queries GROQ (llama-3.3-70b-versatile) with a structured prompt asking for:
+      - Concise 3-4 sentence summary
+      - Pie chart data (Risks, Benefits, ROI, Maintenance/Skill Gap, percentages summing to ~100)
+      - 5-year growthAndDegradationData
+  - Uses `response_format: { type: 'json_object' }` for reliable structured output
+  - Parses the JSON response
+- **Frontend Analytics.jsx**:
+  - Full-width drag-and-drop upload bar
+  - "Upload & Extract Summary" button
+  - Summary display
+  - "Analyze the PDF" button to show charts
+  - Recharts PieChart and ComposedChart (Bar for value degradation, Line for company growth)
+  - Theme-aware chart styling
+  - Added "View Example PDF Template" link (Google Drive)
+
+### Pre-Deployment Cleanup
+- **Removed debug console.logs** from `server/server.js`
+- **Verified API client** uses `VITE_API_BASE_URL`
+- **Verified build scripts**: client has `vite build`, server has `cross-env NODE_ENV=production node server.js`
+
+Files Created/Modified:
+- server/config/index.js (added GROQ_API_KEY, GROQ_MODEL config)
+- server/.env.example (added GROQ_API_KEY, GROQ_MODEL)
+- server/.env (created with GROQ config)
+- server/services/analyticsService.js (new)
+- server/controllers/analyticsController.js (new)
+- server/routes/analytics.js (new)
+- server/routes/index.js (added analytics routes)
+- client/src/hooks/useAnalytics.js (updated with useAnalyzeDocument)
+- client/src/services/api/analytics.js (updated)
+- client/src/pages/Analytics/Analytics.jsx (completely revamped)
+- client/src/pages/Dashboard/Dashboard.jsx (uses dynamic metrics)
+- server/server.js (removed debug console.logs)

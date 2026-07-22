@@ -7,16 +7,22 @@ A production-ready backend API for the AI-powered industrial knowledge managemen
 - Express.js
 - MongoDB
 - Mongoose
-- JWT Authentication
-- Helmet (Security)
-- Rate Limiting
+- JWT Authentication (access + refresh tokens, cookies)
+- Helmet (Security Headers)
+- Express Rate Limiting
 - Logging with Winston
+- Multer (File Uploads)
+- Groq SDK (LLM for document analysis)
+- pdf-parse-new (PDF text extraction)
+- Google Gemini (AI Assistant Chat)
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js (v18+)
 - MongoDB (locally or via MongoDB Atlas)
+- Groq API Key (for document analysis)
+- Google Gemini API Key (for AI Assistant Chat)
 
 ### Installation
 
@@ -29,7 +35,7 @@ npm install
 2. Configure environment variables:
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your configuration (MONGODB_URI, GROQ_API_KEY, GEMINI_API_KEY, etc.)
 ```
 
 3. Start MongoDB (if running locally):
@@ -70,10 +76,22 @@ Base URL: `http://localhost:5000/api/v1`
 - `GET /auth/me` - Get current user (protected)
 - `PUT /auth/me` - Update profile (protected)
 
+### Documents Endpoints
+- `GET /documents` - List all documents (protected)
+- `GET /documents/:id` - Get single document (protected)
+- `POST /documents` - Upload new document (protected, accepts FormData with 'document' file)
+- `DELETE /documents/:id` - Delete document (protected, removes physical file too)
+
+### Analytics Endpoints
+- `GET /analytics/metrics` - Get dynamic metrics (protected)
+- `POST /analytics/analyze-document` - Analyze PDF with GROQ (protected, accepts FormData with 'document' file)
+
+### AI Assistant Endpoints
+- `POST /ai/chat` - Chat with AI Assistant (protected, accepts documentId and prompt)
+
 ## Project Structure
 ```
 server/
-├── src/
 ├── config/          # Configuration
 ├── database/        # DB connection
 ├── controllers/     # Request handlers
@@ -85,11 +103,8 @@ server/
 ├── validators/      # Validations
 ├── utils/           # Utilities
 ├── constants/       # Constants
-├── uploads/         # File uploads
-├── logs/            # Log files
-├── jobs/            # Background jobs
-├── socket/          # Socket.io
-├── tests/           # Tests
+├── uploads/         # File uploads (created automatically)
+├── logs/            # Log files (created automatically)
 ├── app.js
 └── server.js
 ```

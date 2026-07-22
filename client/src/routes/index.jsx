@@ -110,6 +110,10 @@ export const router = createBrowserRouter([
         element: <Documents />
       },
       {
+        path: '/documents',
+        element: <Navigate to="/dashboard/documents" replace />
+      },
+      {
         path: '/dashboard/upload',
         element: <UploadDocument />
       },

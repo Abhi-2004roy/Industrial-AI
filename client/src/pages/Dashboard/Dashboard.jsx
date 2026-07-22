@@ -3,38 +3,40 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, Upload, Users, TrendingUp } from 'lucide-react'
 import { mockDocuments, mockUsers } from '@/constants/mockData'
 import { useDocuments } from '@/hooks/useDocuments'
+import { useAnalyticsMetrics } from '@/hooks/useAnalytics'
 import { useThemeContext } from '@/context/ThemeContext'
 
 export default function Dashboard() {
   const { data } = useDocuments()
+  const { data: metrics, isLoading: metricsLoading } = useAnalyticsMetrics()
   const docs = data?.data || mockDocuments
   const { isDark } = useThemeContext()
 
   const stats = [
     {
       title: 'Total Documents',
-      value: docs?.length || mockDocuments.length,
+      value: metrics?.totalDocuments ?? docs?.length ?? 0,
       icon: FileText,
       color: 'text-primary',
       bgColor: 'bg-primary/10'
     },
     {
       title: 'Active Users',
-      value: mockUsers.length,
+      value: metrics?.activeUsers ?? 0,
       icon: Users,
       color: 'text-success',
       bgColor: 'bg-success/10'
     },
     {
       title: 'Uploads Today',
-      value: 12,
+      value: metrics?.uploadsToday ?? 0,
       icon: Upload,
       color: 'text-accent',
       bgColor: 'bg-accent/10'
     },
     {
-      title: 'Views This Week',
-      value: '1.2k',
+      title: 'Total Logins',
+      value: metrics?.totalLogins ?? 0,
       icon: TrendingUp,
       color: 'text-warning',
       bgColor: 'bg-warning/10'
@@ -74,7 +76,9 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className={`text-3xl font-bold ${isDark ? 'text-white' : ''}`}>{stat.value}</div>
+                <div className={`text-3xl font-bold ${isDark ? 'text-white' : ''}`}>
+                  {metricsLoading ? '...' : stat.value}
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -128,16 +132,18 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockDocuments.slice(0, 5).map((doc, idx) => (
-                  <div key={doc.id} className={`flex items-center gap-4 p-3 rounded-lg ${isDark ? 'hover:bg-slate-700' : 'hover:bg-muted/20'}`}>
+                {(docs.length ? docs : mockDocuments).slice(0, 5).map((doc) => (
+                  <div key={doc._id || doc.id} className={`flex items-center gap-4 p-3 rounded-lg ${isDark ? 'hover:bg-slate-700' : 'hover:bg-muted/20'}`}>
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                       <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`font-medium truncate ${isDark ? 'text-white' : ''}`}>{doc.title}</p>
-                      <p className={`text-sm truncate ${isDark ? 'text-slate-400' : 'text-muted'}`}>{doc.category}</p>
+                      <p className={`text-sm truncate ${isDark ? 'text-slate-400' : 'text-muted'}`}>{doc.category?.name || doc.category || 'Uncategorized'}</p>
                     </div>
-                    <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-muted'}`}>{doc.uploadDate}</span>
+                    <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-muted'}`}>
+                      {doc.uploadDate || (doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : '')}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -156,7 +162,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockUsers.slice(0, 5).map((user, idx) => (
+                {mockUsers.slice(0, 5).map((user) => (
                   <div key={user.id} className={`flex items-center gap-4 p-3 rounded-lg ${isDark ? 'hover:bg-slate-700' : 'hover:bg-muted/20'}`}>
                     <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-medium">
                       {user.name.charAt(0)}
@@ -176,4 +182,3 @@ export default function Dashboard() {
     </div>
   )
 }
-

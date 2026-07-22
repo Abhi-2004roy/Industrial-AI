@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { getFileUrl } from '@/utils/fileUrl'
 import { motion } from 'framer-motion'
 import {
   LayoutDashboard,
@@ -89,6 +90,10 @@ function SidebarContent({ onClose }) {
   const location = useLocation()
   const { user } = useAuthContext()
   const { isDark } = useThemeContext()
+  const [avatarError, setAvatarError] = useState(false)
+
+  const avatarPath = user?.avatar || user?.profileImage
+  const avatarUrl = avatarPath && !avatarError ? getFileUrl(avatarPath) : ''
 
   return (
     <div className="h-full flex flex-col">
@@ -110,9 +115,18 @@ function SidebarContent({ onClose }) {
 
       <div className="p-4 border-t border-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-            {user?.name?.charAt(0) || 'U'}
-          </div>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={user?.name || 'Profile'}
+              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-medium flex-shrink-0">
+              {user?.name?.charAt(0) || 'U'}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{user?.name}</p>
             <p className="text-xs text-gray-400 truncate">{user?.role}</p>

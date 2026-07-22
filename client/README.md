@@ -3,14 +3,14 @@
 A modern, AI-powered platform for managing industrial documents, featuring:
 
 ## Features
-- 🔐 User Authentication (Login/Signup)
-- 📄 Document Management System
-- 🤖 AI Summary & Chat (Mock Implementation)
-- 📊 Analytics Dashboard
+- 🔐 User Authentication (Login/Signup, JWT, Refresh Tokens, Password Reset)
+- 📄 Document Management System (upload, list, view, delete, drag-and-drop)
+- 🤖 AI Assistant (Gemini API, TXT/PDF text extraction)
+- 📊 Analytics Dashboard (dynamic metrics, GROQ-powered document analysis with charts)
 - 👥 Team Management
 - 🌓 Dark/Light Mode Toggle
-- 🖼️ Image Slider on Landing Page
-- 🎨 Beautiful UI with Framer Motion animations
+- 🖼️ Image Slider & Testimonials Marquee on Landing Page
+- 🎨 Beautiful UI with Framer Motion animations, custom cursor, gradient backgrounds
 - 📱 Responsive Design
 
 ## Tech Stack
@@ -23,8 +23,16 @@ A modern, AI-powered platform for managing industrial documents, featuring:
 - React Query (TanStack Query)
 - Lucide Icons
 - React Hook Form
+- Recharts (Charts)
+- Axios
 
 ## Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+- Backend API running (see server/README.md)
+
+### Installation
 
 1. Install dependencies:
 ```bash
@@ -32,40 +40,45 @@ cd client
 npm install
 ```
 
-2. Start the development server:
+2. Configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration (VITE_API_BASE_URL)
+```
+
+3. Start the development server:
 ```bash
 npm run dev
 ```
 
-3. Open your browser and navigate to http://localhost:5173
+4. Open your browser and navigate to http://localhost:5173
 
 ## Test Credentials
-- Email: alex.morgan@industrial.ai
-- Password: password123
+(Create a user via the signup page, backend supports local authentication)
 
 ## Project Structure
 ```
 client/src/
 ├── assets/              # Static assets
 ├── components/
-│   ├── common/         # Reusable components
-│   ├── layout/         # Layout components
+│   ├── common/         # Reusable components (ImageSlider, MouseGlow, ThemeToggle)
+│   ├── landing/        # Landing page components
+│   ├── layout/         # Layout components (AppLayout, PublicLayout, Footer)
+│   ├── navigation/     # Navbar, Sidebar
 │   └── ui/             # ShadCN UI components
-├── constants/          # Mock data and constants
+├── constants/          # Constants
 ├── context/            # React Context (Auth, Theme, Notifications)
-├── hooks/              # Custom hooks
-├── pages/              # Page components
-├── services/           # API services
-└── utils/              # Utility functions
+├── hooks/              # Custom hooks (useAuth, useAnalytics, useDocuments, etc.)
+├── pages/              # Page components (all app pages)
+├── routes/             # React Router config
+├── services/api/       # API service layer
+└── utils/              # Utility functions (getFileUrl, cn, etc.)
 ```
 
 ## Next Steps
-- [ ] Implement backend API with Node.js/Express
-- [ ] Connect to MongoDB
-- [ ] Add real authentication with JWT
-- [ ] Implement file upload functionality
-- [ ] Add real AI features with OpenAI API
-- [ ] Deploy to production
+- [ ] Implement RAG pipeline for better document search
+- [ ] Add more AI features (semantic search, advanced QA)
+- [ ] Deploy to Vercel
 
 ## License
 MIT

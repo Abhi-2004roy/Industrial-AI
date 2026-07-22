@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,8 +17,22 @@ import {
 } from '@/components/ui/dialog'
 
 export default function Documents() {
+  const [searchParams] = useSearchParams()
+  const searchQuery = searchParams.get('search')?.trim().toLowerCase() || ''
   const { data, isLoading } = useDocuments()
-  const docs = data?.data ?? []
+  const allDocs = data?.data ?? []
+  const docs = searchQuery
+    ? allDocs.filter((doc) => {
+        const title = (doc.title || '').toLowerCase()
+        const description = (doc.description || '').toLowerCase()
+        const category = (doc.category?.name || doc.category || '').toLowerCase()
+        return (
+          title.includes(searchQuery) ||
+          description.includes(searchQuery) ||
+          category.includes(searchQuery)
+        )
+      })
+    : allDocs
   const { isDark } = useThemeContext()
   const deleteDocumentMutation = useDeleteDocument()
   const [docToDelete, setDocToDelete] = useState(null)
@@ -40,7 +54,11 @@ export default function Documents() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>Documents</h1>
-          <p className={`mt-1 ${isDark ? 'text-slate-400' : 'text-muted'}`}>Manage and organize your industrial documents</p>
+          <p className={`mt-1 ${isDark ? 'text-slate-400' : 'text-muted'}`}>
+            {searchQuery
+              ? `Showing results for "${searchParams.get('search')}"`
+              : 'Manage and organize your industrial documents'}
+          </p>
         </div>
         <Link to="/dashboard/upload">
           <Button>
@@ -60,8 +78,14 @@ export default function Documents() {
         <Card className={isDark ? 'bg-slate-800 border-slate-700' : ''}>
           <CardContent className="py-10 text-center">
             <FileText className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-slate-500' : 'text-muted'}`} />
-            <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>No documents yet</h2>
-            <p className={`mt-1 ${isDark ? 'text-slate-400' : 'text-muted'}`}>Upload a document to start building your knowledge base.</p>
+            <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              {searchQuery ? 'No matching documents' : 'No documents yet'}
+            </h2>
+            <p className={`mt-1 ${isDark ? 'text-slate-400' : 'text-muted'}`}>
+              {searchQuery
+                ? 'Try a different search term or clear the search filter.'
+                : 'Upload a document to start building your knowledge base.'}
+            </p>
           </CardContent>
         </Card>
       ) : (

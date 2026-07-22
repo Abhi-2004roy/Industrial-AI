@@ -26,6 +26,12 @@ export default {
     apiKey: process.env.GEMINI_API_KEY || '',
   },
 
+  // Groq
+  groq: {
+    apiKey: process.env.GROQ_API_KEY || '',
+    model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+  },
+
   // Email
   email: {
     host: process.env.EMAIL_HOST || 'smtp.ethereal.email',

@@ -2,12 +2,14 @@ import express from 'express'
 import authRouter from './auth.js'
 import documentRouter from './documents.js'
 import aiRouter from './ai.js'
+import analyticsRouter from './analytics.js'
 
 const router = express.Router()
 
 router.use('/auth', authRouter)
 router.use('/documents', documentRouter)
 router.use('/ai', aiRouter)
+router.use('/analytics', analyticsRouter)
 
 router.get('/health', (req, res) => {
   res.status(200).json({

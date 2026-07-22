@@ -1,5 +1,6 @@
 import config from '../config/index.js';
 import authService from '../services/authService.js';
+import analyticsService from '../services/analyticsService.js';
 import { logger } from '../utils/index.js';
 
 const setCookieOptions = (res) => {
@@ -21,6 +22,8 @@ export const register = async (req, res, next) => {
       path: '/api/v1/auth/refresh-token',
     });
 
+    await analyticsService.logAuthActivity(user._id || user.id, 'register', req);
+
     res.status(201).json({
       success: true,
       data: { user, accessToken },
@@ -40,6 +43,8 @@ export const login = async (req, res, next) => {
       ...setCookieOptions(res),
       path: '/api/v1/auth/refresh-token',
     });
+
+    await analyticsService.logAuthActivity(user._id || user.id, 'login', req);
 
     res.status(200).json({
       success: true,
