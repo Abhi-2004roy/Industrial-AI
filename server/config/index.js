@@ -5,7 +5,7 @@ dotenv.config()
 export default {
   env: process.env.NODE_ENV || 'development',
   port: process.env.PORT || 5000,
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  clientUrl: process.env.CLIENT_URL || 'https://industrial-ai-five.vercel.app',
 
   // MongoDB
   mongodb: {
