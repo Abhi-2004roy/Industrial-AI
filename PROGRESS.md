@@ -37,7 +37,7 @@ Building a complete enterprise platform with backend, AI integration, deployment
 
 ### ✅ Phase 4: Analytics & Performance
 - [x] Build Dashboard Analytics (dynamic metrics: logins, active users, documents, uploads today)
-- [x] Build AI-Powered Document Analysis Pipeline (PDF upload, GROQ LLM, summary, charts)
+- [x] Build AI-Powered Document Analysis Pipeline (PDF upload, GROQ LLM `qwen/qwen3.8-27b`, summary, charts)
 - [ ] Optimize database (Indexes, Aggregation, Connection Pooling)
 - [ ] Implement basic caching
 
@@ -65,11 +65,12 @@ Building a complete enterprise platform with backend, AI integration, deployment
 - ✅ **Dynamic Dashboard Metrics**: Real-time counts for logins, active users, documents, uploads today
 - ✅ **AI-Powered Analytics Page**:
   - Drag-and-drop PDF upload
-  - GROQ LLM integration for document analysis
+  - GROQ LLM integration for document analysis (model: `qwen/qwen3.8-27b`, migrated from the retired `llama-3.3-70b-versatile`)
   - Summary display
   - Pie chart for risk/benefit/ROI/maintenance
   - Composed chart for value degradation vs company growth over 5 years
   - Example PDF template link
+  - `GROQ_MODEL`/`GROQ_API_KEY` documented in `server/.env.example`
 
 ## Pending/Next Steps
 

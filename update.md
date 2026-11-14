@@ -312,7 +312,7 @@ Files Modified:
     - Validates PDF input
     - Extracts text
     - Truncates to 12,000 chars
-    - Queries GROQ (llama-3.3-70b-versatile) with a structured prompt asking for:
+    - Queries GROQ (currently `qwen/qwen3.8-27b`) with a structured prompt asking for:
       - Concise 3-4 sentence summary
       - Pie chart data (Risks, Benefits, ROI, Maintenance/Skill Gap, percentages summing to ~100)
       - 5-year growthAndDegradationData
@@ -345,3 +345,34 @@ Files Created/Modified:
 - client/src/pages/Analytics/Analytics.jsx (completely revamped)
 - client/src/pages/Dashboard/Dashboard.jsx (uses dynamic metrics)
 - server/server.js (removed debug console.logs)
+
+## latest Updates : After Deployment updates:
+- server lags after restart for more than 10 seconds
+- ✅ Groq llama model has expired → migrated to `qwen/qwen3.8-27b` (see "GROQ Model Migration" below)
+- mobile view of the software's ai assistant page is still in issue
+- notification doesnt work for now
+- users cannot be edited as to who's role is assigned to it
+
+---
+
+## GROQ Model Migration → qwen/qwen3.8-27b
+
+- **Reason**: The previous model `llama-3.3-70b-versatile` moved to Groq's Enterprise-only plan, so document analysis calls were failing on the free/developer tier.
+- **Model replaced everywhere** with the new Groq model ID `qwen/qwen3.8-27b`:
+  - `server/config/index.js` — `groq.model` default value
+  - `server/.env` — `GROQ_MODEL` value
+  - `server/.env.example` — added the missing `GROQ_API_KEY` and `GROQ_MODEL` entries
+- **Prompt refined** in `server/services/analyticsService.js` (same strict-JSON structure and keys, but now instructs the model to read the entire document, prefer explicit figures it contains, and produce finer-grained pie/growth values).
+- **Unchanged**: Groq SDK usage, `response_format: { type: 'json_object' }`, and the JSON parse/fallback logic.
+
+Files Modified:
+- server/config/index.js
+- server/.env
+- server/.env.example
+- server/services/analyticsService.js
+
+### Current Known Issues
+- Server lags ~10 seconds after restart
+- Mobile view of the AI Assistant page still has layout issues
+- Notifications do not work yet
+- User role cannot be edited/reassigned yet

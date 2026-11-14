@@ -92,9 +92,9 @@ export async function analyzeDocument(fileBuffer) {
 
   documentText = truncateText(documentText)
 
-  const prompt = `You are an industrial document analyst. Analyze the following document and respond with ONLY valid JSON (no markdown, no code fences) in this exact shape:
+  const prompt = `You are an industrial document analyst. Read the entire document carefully and extract the actual figures, metrics, and trends it contains before answering. Respond with ONLY valid JSON (no markdown, no code fences, no extra commentary) in this exact shape:
 {
-  "summary": "A concise 3-4 sentence summary of the document.",
+  "summary": "A concise 3-4 sentence summary grounded in the document's key facts and figures.",
   "pieChartData": [
     { "name": "Risks", "value": <number 0-100> },
     { "name": "Benefits", "value": <number 0-100> },
@@ -111,10 +111,13 @@ export async function analyzeDocument(fileBuffer) {
 }
 
 Rules:
-- pieChartData values should represent percentage breakdown and sum to approximately 100.
-- valueDegradation should reflect asset/value decline trends (higher = more degradation).
-- companyGrowth should reflect projected company growth percentage or index per year.
-- Base all values on the document content; if uncertain, provide reasonable industrial estimates.
+- Read the whole document first and base every value on the figures, metrics, and statements it actually contains.
+- When the document states explicit numbers, use them (rounded to at most 2 decimals) instead of generic estimates.
+- pieChartData values represent the percentage breakdown across the four categories and must sum to approximately 100. Use decimals where useful for finer detail rather than only whole numbers.
+- valueDegradation should reflect asset/value decline trends (higher = more degradation); report the actual magnitude or rate where the document provides it.
+- companyGrowth should reflect projected company growth percentage or index per year; prefer the document's own figures when available.
+- Only fall back to reasonable industrial estimates when the document is silent, and keep them consistent with any partial data present.
+- Always return the exact keys and structure shown above; do not add, rename, or omit any field.
 
 Document:
 ${documentText}`
