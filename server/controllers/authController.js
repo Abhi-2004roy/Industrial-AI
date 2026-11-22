@@ -44,6 +44,7 @@ export const login = async (req, res, next) => {
       path: '/api/v1/auth/refresh-token',
     });
 
+    await authService.recordLogin(user._id || user.id, req.headers['x-platform'] || 'web');
     await analyticsService.logAuthActivity(user._id || user.id, 'login', req);
 
     res.status(200).json({

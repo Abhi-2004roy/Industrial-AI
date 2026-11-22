@@ -48,6 +48,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
+    lastLoginPlatform: {
+      type: String,
+      enum: ['web', 'mobile'],
+      default: 'web',
+    },
     emailVerificationToken: String,
     emailVerificationExpire: Date,
     resetPasswordToken: String,

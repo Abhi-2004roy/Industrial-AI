@@ -40,10 +40,14 @@ app.use(helmet({
 }));
 
 // CORS — allow local dev and deployed Vercel frontend
-const allowedOrigins = [...new Set([config.clientUrl, 'http://localhost:5173', 'http://localhost:5174'].filter(Boolean))];
+const allowedOrigins = [...new Set([config.clientUrl, 'http://localhost:5173', 'http://localhost:5174' , "http://localhost:8081"].filter(Boolean))];
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no Origin header (native mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      return callback(null, allowedOrigins.includes(origin));
+    },
     credentials: true,
   })
 );

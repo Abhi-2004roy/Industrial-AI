@@ -82,6 +82,14 @@ export const logout = async (userId) => {
   await UserRepository.updateRefreshToken(userId, null);
 };
 
+export const recordLogin = async (userId, platform = 'web') => {
+  const lastLoginPlatform = platform === 'mobile' ? 'mobile' : 'web';
+  return UserRepository.updateById(userId, {
+    lastLoginAt: new Date(),
+    lastLoginPlatform,
+  });
+};
+
 export const refreshToken = async (token) => {
   if (!token) {
     throw new UnauthorizedError('Refresh token is required');
@@ -211,6 +219,7 @@ export default {
   register,
   login,
   logout,
+  recordLogin,
   refreshToken,
   getCurrentUser,
   updateProfile,
