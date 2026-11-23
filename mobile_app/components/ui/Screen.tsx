@@ -31,7 +31,7 @@ interface ScreenProps {
 export function Screen({ title, subtitle, refreshing = false, onRefresh, children }: ScreenProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { paddingStyle } = useAnimatedKeyboardHeight(40);
+  const { keyboardSpacerStyle } = useAnimatedKeyboardHeight();
   const { scrollRef, setFocusedInput } = useKeyboardAwareScroll();
 
   return (
@@ -39,7 +39,7 @@ export function Screen({ title, subtitle, refreshing = false, onRefresh, childre
       <KeyboardScrollContext.Provider value={setFocusedInput}>
         <Animated.ScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.content, Platform.OS === 'android' ? paddingStyle : null]}
+          contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
           refreshControl={
@@ -60,6 +60,7 @@ export function Screen({ title, subtitle, refreshing = false, onRefresh, childre
             </View>
           ) : null}
           {children}
+          <Animated.View style={keyboardSpacerStyle} />
         </Animated.ScrollView>
       </KeyboardScrollContext.Provider>
     </SafeAreaView>

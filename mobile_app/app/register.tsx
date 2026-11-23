@@ -20,7 +20,7 @@ export default function RegisterScreen() {
   const { signUp } = useAuth();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const { paddingStyle } = useAnimatedKeyboardHeight(24);
+  const { keyboardSpacerStyle } = useAnimatedKeyboardHeight();
   const { scrollRef, setFocusedInput } = useKeyboardAwareScroll();
 
   const [name, setName] = useState('');
@@ -59,10 +59,7 @@ export default function RegisterScreen() {
       <KeyboardScrollContext.Provider value={setFocusedInput}>
         <Animated.ScrollView
           ref={scrollRef}
-          contentContainerStyle={[
-            styles.content,
-            Platform.OS === 'android' ? paddingStyle : undefined,
-          ]}
+          contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}>
           <View style={styles.brand}>
@@ -129,6 +126,7 @@ export default function RegisterScreen() {
               <Text style={styles.link}>Sign in</Text>
             </Pressable>
           </View>
+          <Animated.View style={keyboardSpacerStyle} />
         </Animated.ScrollView>
       </KeyboardScrollContext.Provider>
     </SafeAreaView>

@@ -293,3 +293,18 @@ Files changed (all under `mobile_app/`; `client/` untouched):
 - **`npx expo start -c` is recommended**: `expo-image-picker` (R2-Step 3) is a newly added native
   module — restart the dev server with `-c` (clear Metro cache) so it is picked up in Expo Go.
   Dark mode itself needs no restart (JS-only change).
+
+---
+
+## R2-Step 6 — Fix Android Expo Go Reanimated useAnimatedStyle Object Freeze Crash
+**Status:** [x] Done
+
+**Root cause:** Passing a `useAnimatedStyle` result into `<Animated.ScrollView>`'s `contentContainerStyle` causes React Native / Reanimated view descriptor cleanup to attempt assigning `current = undefined` on a frozen style descriptor inside `react-native-reanimated/src/hook/useAnimatedStyle.ts`.
+
+**Fix applied:**
+1. **`hooks/use-animated-keyboard-height.ts`** — Added `keyboardSpacerStyle = useAnimatedStyle(() => ({ height: Platform.OS === 'android' ? height.value : 0 }))`. Preserved existing `paddingStyle` and `liftStyle`.
+2. **`components/ui/Screen.tsx`** — Kept `<Animated.ScrollView>`'s `contentContainerStyle={styles.content}` completely static, and rendered a Reanimated `<Animated.View style={keyboardSpacerStyle} />` as the last child inside the `<Animated.ScrollView>`.
+3. **`app/login.tsx`** & **`app/register.tsx`** — Kept `contentContainerStyle={styles.content}` static and rendered `<Animated.View style={keyboardSpacerStyle} />` as the last child inside `<Animated.ScrollView>`.
+4. Audited `ai-chat.tsx`, `upload.tsx`, and `analytics.tsx` — confirmed full compliance with Reanimated rules without disabling any features.
+
+Verification: `npx tsc --noEmit` inside `mobile_app/` passed with 0 errors.

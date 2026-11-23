@@ -20,7 +20,7 @@ export default function LoginScreen() {
   const { signIn } = useAuth();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const { paddingStyle } = useAnimatedKeyboardHeight(24);
+  const { keyboardSpacerStyle } = useAnimatedKeyboardHeight();
   const { scrollRef, setFocusedInput } = useKeyboardAwareScroll();
 
   const [email, setEmail] = useState('');
@@ -50,10 +50,7 @@ export default function LoginScreen() {
       <KeyboardScrollContext.Provider value={setFocusedInput}>
         <Animated.ScrollView
           ref={scrollRef}
-          contentContainerStyle={[
-            styles.content,
-            Platform.OS === 'android' ? paddingStyle : undefined,
-          ]}
+          contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}>
           <View style={styles.brand}>
@@ -99,6 +96,7 @@ export default function LoginScreen() {
               <Text style={styles.link}>Sign up</Text>
             </Pressable>
           </View>
+          <Animated.View style={keyboardSpacerStyle} />
         </Animated.ScrollView>
       </KeyboardScrollContext.Provider>
     </SafeAreaView>

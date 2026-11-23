@@ -55,7 +55,12 @@ export function useAnimatedKeyboardHeight(extraOffset = 0) {
     transform: [{ translateY: -height.value }],
   }));
 
-  return { height, paddingStyle, liftStyle };
+  /** Animated spacer height equal to the keyboard height on Android (iOS handles insets natively). */
+  const keyboardSpacerStyle = useAnimatedStyle(() => ({
+    height: Platform.OS === 'android' ? height.value : 0,
+  }));
+
+  return { height, paddingStyle, liftStyle, keyboardSpacerStyle };
 }
 
 // ---------------------------------------------------------------------------
