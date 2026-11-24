@@ -1,24 +1,35 @@
 import { body, validationResult } from 'express-validator';
-import { BadRequestError } from '../utils/index.js';
 
 export const validate = (validations) => {
   return async (req, res, next) => {
-    for (let validation of validations) {
-      const result = await validation.run(req);
-      if (!result.isEmpty()) {
-        break;
+    try {
+      for (let validation of validations) {
+        const result = await validation.run(req);
+        if (!result.isEmpty()) {
+          break;
+        }
       }
+
+      const errors = validationResult(req);
+      if (errors.isEmpty()) {
+        return next();
+      }
+
+      const errorList = errors.array();
+      const extractedErrors = errorList.map((err) => ({ [err.path]: err.msg }));
+      const firstErrorMessage = errorList[0]?.msg || 'Validation failed';
+
+      // Respond immediately with a clean 400 instead of throwing inside an async
+      // middleware (a rejected promise here would surface as an unhandled
+      // rejection and could crash the Node process).
+      return res.status(400).json({
+        success: false,
+        message: firstErrorMessage,
+        errors: extractedErrors,
+      });
+    } catch (err) {
+      return next(err);
     }
-
-    const errors = validationResult(req);
-    if (errors.isEmpty()) {
-      return next();
-    }
-
-    const extractedErrors = [];
-    errors.array().map(err => extractedErrors.push({ [err.path]: err.msg }));
-
-    throw new BadRequestError(JSON.stringify(extractedErrors));
   };
 };
 

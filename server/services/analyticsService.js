@@ -3,9 +3,55 @@ import ActivityLog from '../models/ActivityLog.js'
 import User from '../models/User.js'
 import Document from '../models/Document.js'
 import config from '../config/index.js'
-import { BadRequestError, InternalServerError } from '../utils/index.js'
+import { BadRequestError, InternalServerError, ServiceUnavailableError } from '../utils/index.js'
 
 const groq = new Groq({ apiKey: config.groq.apiKey })
+
+// Exponential backoff delays (ms) applied to each model before falling back.
+const BACKOFF_MS = [1500, 3000]
+// Lighter/alternate Groq model used when the primary keeps returning 503/429.
+const FALLBACK_MODEL = 'llama-3.1-8b-instant'
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Detect transient "high demand" / rate-limit failures from the Groq SDK.
+function isRetryableAiError(error) {
+  const status =
+    error?.status ?? error?.statusCode ?? error?.response?.status ?? error?.error?.status
+  if (status === 503 || status === 429) return true
+
+  const message = `${error?.message || ''} ${error?.error?.message || ''}`.toLowerCase()
+  return [
+    'high demand',
+    'overloaded',
+    'service unavailable',
+    'rate limit',
+    'temporarily unavailable',
+    '503',
+    '429',
+  ].some((needle) => message.includes(needle))
+}
+
+// Retry the primary model, then automatically fall back to an alternate model.
+async function createCompletionWithRetry(params) {
+  const models = [...new Set([config.groq.model, FALLBACK_MODEL].filter(Boolean))]
+  let lastError
+
+  for (const model of models) {
+    // Initial attempt + up to 2 retries (backoff 1500ms, then 3000ms).
+    for (let attempt = 0; attempt <= BACKOFF_MS.length; attempt += 1) {
+      try {
+        return await groq.chat.completions.create({ ...params, model })
+      } catch (error) {
+        lastError = error
+        if (!isRetryableAiError(error)) throw error
+        if (attempt < BACKOFF_MS.length) await sleep(BACKOFF_MS[attempt])
+      }
+    }
+  }
+
+  throw lastError
+}
 
 async function resolvePdfParser() {
   const pdfModule = await import('pdf-parse-new')
@@ -123,8 +169,7 @@ Document:
 ${documentText}`
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: config.groq.model,
+    const completion = await createCompletionWithRetry({
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.3,
       response_format: { type: 'json_object' },
@@ -145,8 +190,17 @@ ${documentText}`
         : [],
     }
   } catch (err) {
-    if (err instanceof BadRequestError || err instanceof InternalServerError) {
+    if (
+      err instanceof BadRequestError ||
+      err instanceof InternalServerError ||
+      err instanceof ServiceUnavailableError
+    ) {
       throw err
+    }
+    if (isRetryableAiError(err)) {
+      throw new ServiceUnavailableError(
+        'AI service is currently busy. Please try again in a moment.'
+      )
     }
     throw new InternalServerError('Failed to analyze document with Groq')
   }

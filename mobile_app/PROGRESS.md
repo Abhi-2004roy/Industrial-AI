@@ -45,6 +45,15 @@ Constraints: do NOT touch `client/`; do NOT remove existing animations or `Serve
 - [x] **R2-Step 4** — Full dark mode support.
 - [x] **R2-Step 5** — Verify (`tsc` + `expo lint`).
 
+### Round 3 — Stability & UX fixes (this request)
+
+Constraints: do NOT touch `client/`; do NOT remove existing features (Dark Mode, Reanimated keyboard spacer/animations, `ServerWakeBanner`, profile avatar upload, `useFocusEffect` refresh); stay **100% Expo Go compatible** (no native-only PDF viewers).
+
+- [x] **R3-Issue 1** — Fix unhandled-rejection crash on validation errors (`server/validators/auth.js`).
+- [x] **R3-Issue 2** — Make documents openable via `Linking.openURL(resolveAssetUrl(filePath))`.
+- [x] **R3-Issue 3** — Compact 3-char document selector bubbles in `ai-chat.tsx`.
+- [x] **R3-Issue 4** — AI `503` "high demand" retry + model fallback (server) + clean mobile messaging.
+
 ---
 
 ## Step 0 — Checkpointing bootstrap
@@ -308,3 +317,111 @@ Files changed (all under `mobile_app/`; `client/` untouched):
 4. Audited `ai-chat.tsx`, `upload.tsx`, and `analytics.tsx` — confirmed full compliance with Reanimated rules without disabling any features.
 
 Verification: `npx tsc --noEmit` inside `mobile_app/` passed with 0 errors.
+
+---
+
+## R3-Issue 1 — Unhandled Rejection on Validation Errors
+**Status:** [x] Done
+
+**Root cause:** `server/validators/auth.js#validate` is an `async` Express middleware that did
+`throw new BadRequestError(...)` on invalid input. Express 4 does not catch rejected promises from
+async middleware, so any bad login/register body surfaced as an `UNHANDLED REJECTION` (and could crash Node).
+
+**Fix:**
+1. **`server/validators/auth.js`** — Wrapped the whole middleware body in `try/catch`. On invalid input it now
+   **returns immediately** with `res.status(400).json({ success: false, message: firstErrorMessage, errors })`
+   (message = first express-validator message; `errors` = `[{ field: msg }]` array). Unexpected throw → `next(err)`.
+   Removed the now-unused `BadRequestError` import.
+2. **`mobile_app/app/login.tsx`** & **`mobile_app/app/register.tsx`** — Verified: both already submit
+   `email.trim()` (trailing keyboard spaces are stripped before the request), so false invalid-email errors
+   can no longer occur. No change needed.
+
+---
+
+## R3-Issue 2 — Documents Openable
+**Status:** [x] Done
+
+**Backend verified (no server change needed):**
+- `server/models/Document.js` stores `filePath` (required string).
+- `server/services/documentService.js#uploadDocument` persists `filePath: '/uploads/<file.filename>'`.
+- `GET /api/v1/documents` returns these documents (nested envelope), so each doc carries `filePath`.
+- `server/app.js` serves them statically: `app.use('/uploads', express.static(path.join(__dirname, config.uploadPath)))`.
+- `mobile_app/services/api.ts` already types `filePath?: string` on `ApiDocument` and `resolveAssetUrl(path)`
+  prefixes the server origin (`API_URL` minus `/api/v1`), so `resolveAssetUrl(doc.filePath)` is the correct URL.
+
+**Mobile changes:**
+1. **`mobile_app/app/(drawer)/documents.tsx`** — Card header is now tappable (`Pressable` → `openDocument`) plus a
+   dedicated **"Open" icon button** (`open-outline`). `openDocument` resolves the URL via `resolveAssetUrl(doc.filePath)`
+   and (a) `Alert`s if the URL is missing, (b) `Alert`s if `Linking.canOpenURL` is false, (c) `Linking.openURL(url)`
+   inside a try/catch that `Alert`s on failure. Delete button preserved.
+2. **`mobile_app/app/(drawer)/index.tsx`** — Each "Recent Documents" row is now a `Pressable` calling the same
+   `openDocument` helper, with an `open-outline` affordance and a pressed state. Pull-to-refresh/`useFocusEffect` preserved.
+
+---
+
+## R3-Issue 3 — Compact 3-Character Document Selector Bubbles
+**Status:** [x] Done
+
+**`mobile_app/app/(drawer)/ai-chat.tsx`:**
+- Replaced the horizontal `FlatList` with a horizontal `ScrollView` (`showsHorizontalScrollIndicator={false}`,
+  `contentContainerStyle={styles.chipRow}` with `alignItems: 'center'`).
+- Unselected bubbles are compact rounded pills showing **only** `(item.title || 'Doc').trim().slice(0, 3)`
+  (fixed `height: 38`, `borderRadius: 19`, `minWidth: 44` → never distorts into stretched ovals).
+- Tapping a bubble calls `selectDocument()` which runs `LayoutAnimation.configureNext(...)` and sets the active id;
+  the active bubble **expands to the full title** (with a `document-text` icon) and is highlighted with the
+  active theme color (`colors.primary`). Enabled `UIManager.setLayoutAnimationEnabledExperimental(true)` on Android.
+- Dark Mode colors, Reanimated keyboard `paddingStyle`, `ServerWakeBanner` and `useFocusEffect` refresh all preserved.
+
+---
+
+## R3-Issue 4 — Resilient AI `503` "High Demand"
+**Status:** [x] Done
+
+Shared retry strategy (both providers): on HTTP **503/429** or messages containing "high demand"/"overloaded"/
+"service unavailable"/"rate limit"/"temporarily unavailable", retry up to **2 times with backoff 1500ms → 3000ms**;
+if the primary model still fails, **fall back to an alternate lighter model** on the same provider; final failures are
+reported as a clean **HTTP 503** JSON (`{ success: false, message: 'AI service is currently busy. Please try again in a moment.' }`).
+
+**Server:**
+1. **`server/utils/errors.js`** — Added `ServiceUnavailableError` (status **503**); exported from `server/utils/index.js`.
+2. **`server/controllers/aiController.js`** — Added `isRetryableAiError()`, `generateWithRetry(model, prompt)` and
+   `generateContentWithFallback(prompt)` (primary `gemini-flash-latest` → fallback `gemini-1.5-flash`). `chatWithAI`
+   now calls the fallback helper; its catch returns `res.status(503).json({ success:false, message:'AI service is currently busy. Please try again in a moment.' })` for transient errors, else `next(error)`. No more top-level single `model`.
+3. **`server/services/analyticsService.js`** — Same `isRetryableAiError()` + `createCompletionWithRetry()` wrapping
+   `groq.chat.completions.create` (primary `config.groq.model` → fallback `llama-3.1-8b-instant`).
+   `analyzeDocument`'s catch now throws `ServiceUnavailableError('AI service is currently busy. Please try again in a moment.')`
+   for transient errors (→ `errorHandler` emits 503 via the route's `next(err)`).
+
+**Mobile:**
+4. **`mobile_app/app/(drawer)/ai-chat.tsx`** — On `ApiError` 503, the assistant bubble shows the clean busy message and
+   **the typed prompt is restored** to the input so the user can retry without retyping.
+5. **`mobile_app/app/(drawer)/analytics.tsx`** — On `ApiError` 503, the error box shows the clean busy message; the
+   selected PDF is retained so the user can retry.
+
+---
+
+## R3 Verification
+**Status:** [x] Done
+
+- `npx tsc --noEmit` in `mobile_app/` → **exit 0 (0 errors)**.
+- IDE diagnostics on every modified backend file (`server/validators/auth.js`, `server/controllers/aiController.js`,
+  `server/services/analyticsService.js`, `server/utils/errors.js`, `server/utils/index.js`) → **0 errors**.
+- IDE diagnostics on modified mobile files (`app/(drawer)/{ai-chat,documents,index,analytics}.tsx`) → **0 errors**.
+
+**Exact files modified in Round 3:**
+- `server/validators/auth.js`
+- `server/utils/errors.js`
+- `server/utils/index.js`
+- `server/controllers/aiController.js`
+- `server/services/analyticsService.js`
+- `mobile_app/app/(drawer)/documents.tsx`
+- `mobile_app/app/(drawer)/index.tsx`
+- `mobile_app/app/(drawer)/ai-chat.tsx`
+- `mobile_app/app/(drawer)/analytics.tsx`
+- `mobile_app/PROGRESS.md`
+
+**(verified, unchanged):** `mobile_app/services/api.ts` already exposes `filePath` on `ApiDocument` + `resolveAssetUrl`;
+`mobile_app/app/login.tsx` + `app/register.tsx` already `.trim()` the email. `client/` untouched.
+
+**Deploy note:** Round 3 backend fixes (validator 400 handling, AI retry/fallback + 503 responses) require a
+redeploy of `server/` to Render to take effect on the live API.

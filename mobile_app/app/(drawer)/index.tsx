@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/ui/Screen';
 import { Card, EmptyState, SectionTitle, StatCard } from '@/components/ui/primitives';
@@ -11,6 +11,7 @@ import { useTheme } from '@/context/ThemeContext';
 import {
   analyticsApi,
   documentsApi,
+  resolveAssetUrl,
   type AnalyticsMetrics,
   type ApiDocument,
 } from '@/services/api';
@@ -55,6 +56,24 @@ export default function DashboardScreen() {
   }, [load, refreshUser]);
 
   const recent = documents.slice(0, 5);
+
+  const openDocument = useCallback(async (doc: ApiDocument) => {
+    const url = resolveAssetUrl(doc.filePath);
+    if (!url) {
+      Alert.alert('Cannot open document', 'This document has no file URL available.');
+      return;
+    }
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert('Cannot open document', 'No app is available to open this file type.');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Cannot open document', 'Failed to open the file. Please try again.');
+    }
+  }, []);
 
   return (
     <Screen
@@ -110,9 +129,14 @@ export default function DashboardScreen() {
           />
         ) : (
           recent.map((doc, index) => (
-            <View
+            <Pressable
               key={doc._id}
-              style={[styles.docRow, index > 0 && styles.docRowBorder]}>
+              onPress={() => openDocument(doc)}
+              style={({ pressed }) => [
+                styles.docRow,
+                index > 0 && styles.docRowBorder,
+                pressed && styles.docRowPressed,
+              ]}>
               <View style={styles.docIcon}>
                 <Ionicons name="document-text-outline" size={18} color={colors.primary} />
               </View>
@@ -127,7 +151,8 @@ export default function DashboardScreen() {
               <Text style={styles.docDate}>
                 {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ''}
               </Text>
-            </View>
+              <Ionicons name="open-outline" size={16} color={colors.primary} />
+            </Pressable>
           ))
         )}
       </Card>
@@ -168,6 +193,9 @@ const createStyles = (c: Palette, dark: boolean) =>
     docRowBorder: {
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: c.border,
+    },
+    docRowPressed: {
+      opacity: 0.6,
     },
     docIcon: {
       width: 40,

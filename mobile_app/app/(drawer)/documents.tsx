@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/ui/Screen';
 import { Card, EmptyState, PrimaryButton } from '@/components/ui/primitives';
 import type { Palette } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
-import { documentsApi, type ApiDocument } from '@/services/api';
+import { documentsApi, resolveAssetUrl, type ApiDocument } from '@/services/api';
 
 export default function DocumentsScreen() {
   const router = useRouter();
@@ -61,6 +61,24 @@ export default function DocumentsScreen() {
     ]);
   };
 
+  const openDocument = useCallback(async (doc: ApiDocument) => {
+    const url = resolveAssetUrl(doc.filePath);
+    if (!url) {
+      Alert.alert('Cannot open document', 'This document has no file URL available.');
+      return;
+    }
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert('Cannot open document', 'No app is available to open this file type.');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Cannot open document', 'Failed to open the file. Please try again.');
+    }
+  }, []);
+
   return (
     <Screen
       title="Documents"
@@ -97,17 +115,28 @@ export default function DocumentsScreen() {
         documents.map((doc) => (
           <Card key={doc._id} style={styles.docCard}>
             <View style={styles.docHeader}>
-              <View style={styles.docIcon}>
-                <Ionicons name="document-text-outline" size={20} color={colors.primary} />
-              </View>
-              <View style={styles.docInfo}>
-                <Text style={styles.docTitle} numberOfLines={1}>
-                  {doc.title}
-                </Text>
-                <Text style={styles.docMeta} numberOfLines={1}>
-                  {doc.description || 'Uncategorized'}
-                </Text>
-              </View>
+              <Pressable
+                style={styles.docMain}
+                onPress={() => openDocument(doc)}
+                android_ripple={{ color: `${colors.primary}1a` }}>
+                <View style={styles.docIcon}>
+                  <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+                </View>
+                <View style={styles.docInfo}>
+                  <Text style={styles.docTitle} numberOfLines={1}>
+                    {doc.title}
+                  </Text>
+                  <Text style={styles.docMeta} numberOfLines={1}>
+                    {doc.description || 'Uncategorized'}
+                  </Text>
+                </View>
+              </Pressable>
+              <Pressable
+                onPress={() => openDocument(doc)}
+                hitSlop={10}
+                style={styles.openButton}>
+                <Ionicons name="open-outline" size={18} color={colors.primary} />
+              </Pressable>
               <Pressable onPress={() => confirmDelete(doc)} hitSlop={10} style={styles.deleteButton}>
                 <Ionicons name="trash-outline" size={18} color={colors.destructive} />
               </Pressable>
@@ -159,6 +188,12 @@ const createStyles = (c: Palette, dark: boolean) =>
     docHeader: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: 8,
+    },
+    docMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: 12,
     },
     docIcon: {
@@ -183,6 +218,9 @@ const createStyles = (c: Palette, dark: boolean) =>
       marginTop: 2,
     },
     deleteButton: {
+      padding: 6,
+    },
+    openButton: {
       padding: 6,
     },
     docFooter: {

@@ -9,6 +9,7 @@ import { Card, PrimaryButton, SectionTitle, StatCard } from '@/components/ui/pri
 import type { Palette } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import {
+  ApiError,
   analyticsApi,
   type AnalyticsMetrics,
   type AnalysisResult,
@@ -87,7 +88,12 @@ export default function AnalyticsScreen() {
       setResult(analysis);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze document');
+      if (err instanceof ApiError && err.status === 503) {
+        // Transient upstream "high demand" — keep the selected file so the user can retry.
+        setError('The AI service is currently busy. Please try again in a moment.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to analyze document');
+      }
     } finally {
       setAnalyzing(false);
     }

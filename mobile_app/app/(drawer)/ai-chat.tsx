@@ -5,10 +5,14 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  LayoutAnimation,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -18,7 +22,12 @@ import { ServerWakeBanner } from '@/components/ServerWakeBanner';
 import type { Palette } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
 import { useAnimatedKeyboardHeight } from '@/hooks/use-animated-keyboard-height';
-import { aiApi, documentsApi, type ApiDocument } from '@/services/api';
+import { ApiError, aiApi, documentsApi, type ApiDocument } from '@/services/api';
+
+// Enable LayoutAnimation on Android so selecting a bubble animates its expansion.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface ChatMessage {
   id: string;
@@ -55,6 +64,12 @@ export default function AiChatScreen() {
     }, [loadDocuments])
   );
 
+  // Selecting a bubble expands it in place (LayoutAnimation) while collapsing the rest.
+  const selectDocument = useCallback((id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSelectedId(id);
+  }, []);
+
   const send = async () => {
     const prompt = input.trim();
     if (!prompt || !selectedId || sending) return;
@@ -73,12 +88,20 @@ export default function AiChatScreen() {
       // AI analysis completed → tactile feedback.
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
+      const isBusy = err instanceof ApiError && err.status === 503;
+      // On a transient "high demand" 503, restore the prompt so the user can retry
+      // without retyping it.
+      if (isBusy) setInput(prompt);
       setMessages((prev) => [
         ...prev,
         {
           id: `${Date.now()}-e`,
           role: 'assistant',
-          content: err instanceof Error ? err.message : 'Something went wrong',
+          content: isBusy
+            ? 'The AI service is currently busy. Please try again in a moment.'
+            : err instanceof Error
+              ? err.message
+              : 'Something went wrong',
         },
       ]);
     } finally {
@@ -93,33 +116,41 @@ export default function AiChatScreen() {
           <ServerWakeBanner />
 
           <Text style={styles.sectionLabel}>Select Document</Text>
-          <FlatList
+          <ScrollView
             horizontal
-            data={documents}
-            keyExtractor={(item) => item._id}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipRow}
-            ListEmptyComponent={<Text style={styles.emptyHint}>No documents uploaded yet</Text>}
-            renderItem={({ item }) => {
-              const active = item._id === selectedId;
-              return (
-                <Pressable
-                  onPress={() => setSelectedId(item._id)}
-                  style={[styles.chip, active && styles.chipActive]}>
-                  <Ionicons
-                    name="document-text-outline"
-                    size={14}
-                    color={active ? '#ffffff' : colors.primary}
-                  />
-                  <Text
-                    style={[styles.chipText, active && styles.chipTextActive]}
-                    numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                </Pressable>
-              );
-            }}
-          />
+            style={styles.chipScroll}
+            contentContainerStyle={styles.chipRow}>
+            {documents.length === 0 ? (
+              <Text style={styles.emptyHint}>No documents uploaded yet</Text>
+            ) : (
+              documents.map((item) => {
+                const active = item._id === selectedId;
+                const shortLabel = (item.title || 'Doc').trim().slice(0, 3) || 'Doc';
+                return (
+                  <Pressable
+                    key={item._id}
+                    onPress={() => selectDocument(item._id)}
+                    style={[styles.chip, active && styles.chipActive]}>
+                    {active ? (
+                      <>
+                        <Ionicons name="document-text" size={14} color="#ffffff" />
+                        <Text
+                          style={[styles.chipText, styles.chipTextActive]}
+                          numberOfLines={1}>
+                          {item.title || 'Untitled'}
+                        </Text>
+                      </>
+                    ) : (
+                      <Text style={styles.chipShort} numberOfLines={1}>
+                        {shortLabel}
+                      </Text>
+                    )}
+                  </Pressable>
+                );
+              })
+            )}
+          </ScrollView>
 
           <FlatList
             ref={listRef}
@@ -213,29 +244,44 @@ const createStyles = (c: Palette) =>
       textTransform: 'uppercase',
       color: c.textMuted,
     },
+    chipScroll: {
+      flexGrow: 0,
+      flexShrink: 0,
+      maxHeight: 44,
+    },
     chipRow: {
       gap: 8,
       paddingVertical: 2,
+      alignItems: 'center',
     },
     chip: {
-      flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
-      maxWidth: 200,
-      borderRadius: 999,
+      justifyContent: 'center',
+      minWidth: 44,
+      height: 38,
+      borderRadius: 19,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
       backgroundColor: c.surface,
       paddingHorizontal: 12,
-      paddingVertical: 8,
     },
     chipActive: {
+      flexDirection: 'row',
+      gap: 6,
+      // maxWidth: 220,
+      paddingHorizontal: 14,
       backgroundColor: c.primary,
       borderColor: c.primary,
     },
+    chipShort: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.primary,
+      textTransform: 'uppercase',
+    },
     chipText: {
       fontSize: 13,
-      color: c.primary,
+      color: '#ffffff',
       fontWeight: '600',
       flexShrink: 1,
     },
